@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stay Duration Calculator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Include SheetJS library for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 15px;
+            color: #333;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px 15px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+        }
+        
+        .instructions h3 i {
+            margin-right: 10px;
+            color: #3498db;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .calculator-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 750px;
+        }
+        
+        thead {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        th {
+            padding: 16px 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+        
+        th i {
+            margin-right: 8px;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid #eee;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        
+        td {
+            padding: 14px 10px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .date-input {
+            width: 100%;
+            padding: 14px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            height: 48px;
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: white;
+            text-align: center;
+        }
+        
+        .date-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        /* Mobile optimization for date inputs */
+        input[type="date"] {
+            position: relative;
+            min-height: 48px;
+        }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            color: transparent;
+            background: transparent;
+            cursor: pointer;
+        }
+        
+        .date-input-wrapper {
+            position: relative;
+            display: block;
+        }
+        
+        .date-input-wrapper::after {
+            content: "📅";
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            font-size: 1.1rem;
+            color: #666;
+        }
+        
+        .days-cell {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #2c3e50;
+            min-width: 100px;
+        }
+        
+        .days-cell-small {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #2c3e50;
+            min-width: 100px;
+        }
+        
+        .days-result {
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+        
+        .days-with-both {
+            color: #27ae60;
+        }
+        
+        .days-without-departure {
+            color: #3498db;
+        }
+        
+        .controls {
+            padding: 20px 15px;
+            background-color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .buttons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .main-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .main-buttons button {
+            flex: 1;
+        }
+        
+        .export-btn {
+            width: 100%;
+            border: none;
+            padding: 18px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 60px;
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            color: white;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+        }
+        
+        .export-btn:hover, .export-btn:active {
+            background: linear-gradient(to right, #27ae60, #2ecc71);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.6);
+        }
+        
+        .calculate-btn, .reset-btn {
+            width: 100%;
+            border: none;
+            padding: 18px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 60px;
+        }
+        
+        .calculate-btn {
+            background: linear-gradient(to right, #3498db, #2c80b9);
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .calculate-btn:hover, .calculate-btn:active {
+            background: linear-gradient(to right, #2c80b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
+        }
+        
+        .reset-btn {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+        
+        .reset-btn:hover, .reset-btn:active {
+            background: linear-gradient(to right, #c0392b, #e74c3c);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+        }
+        
+        .calculate-btn i, .reset-btn i, .export-btn i {
+            margin-right: 12px;
+            font-size: 1.3rem;
+        }
+        
+        .total-row {
+            background-color: #2c3e50 !important;
+            color: white;
+            font-weight: 700;
+        }
+        
+        .total-row td {
+            padding: 20px 10px;
+            font-size: 1.2rem;
+        }
+        
+        .total-value {
+            font-size: 1.5rem;
+            color: #f1c40f;
+            font-weight: bold;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            padding: 15px;
+        }
+        
+        /* Mobile specific optimizations */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+                font-size: 15px;
+            }
+            
+            header {
+                padding: 15px 10px;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            .subtitle {
+                font-size: 0.95rem;
+            }
+            
+            th, td {
+                padding: 12px 6px;
+            }
+            
+            .date-input {
+                padding: 12px 8px;
+                font-size: 0.9rem;
+                height: 44px;
+            }
+            
+            .calculate-btn, .reset-btn, .export-btn {
+                padding: 16px;
+                font-size: 1.1rem;
+                height: 56px;
+            }
+            
+            .days-cell, .days-cell-small {
+                font-size: 1.1rem;
+                min-width: 80px;
+            }
+            
+            .days-result {
+                font-size: 1.2rem;
+            }
+            
+            .instructions {
+                padding: 15px;
+            }
+            
+            .instructions h3 {
+                font-size: 1.1rem;
+            }
+            
+            .instructions li {
+                font-size: 0.9rem;
+            }
+            
+            table {
+                min-width: 700px;
+            }
+            
+            .main-buttons {
+                flex-direction: column;
+            }
+        }
+        
+        /* Landscape optimization */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .container {
+                max-width: 100%;
+            }
+            
+            .instructions {
+                display: none;
+            }
+            
+            .date-input {
+                padding: 10px;
+                height: 40px;
+            }
+            
+            th, td {
+                padding: 10px 6px;
+            }
+        }
+        
+        /* Prevent zoom on click */
+        @media (max-width: 768px) {
+            .date-input, .calculate-btn, .reset-btn, .export-btn {
+                touch-action: manipulation;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+                color: #ecf0f1;
+            }
+            
+            header, .instructions, .calculator-card {
+                background-color: rgba(52, 73, 94, 0.95);
+                color: #ecf0f1;
+            }
+            
+            .date-input {
+                background-color: #2c3e50;
+                color: #ecf0f1;
+                border-color: #4a6278;
+            }
+            
+            tbody tr:nth-child(even) {
+                background-color: rgba(44, 62, 80, 0.7);
+            }
+            
+            .controls {
+                background-color: #2c3e50;
+            }
+            
+            .subtitle, .instructions h3 {
+                color: #bdc3c7;
+            }
+        }
+        
+        /* Table column width adjustments */
+        .col-date {
+            width: 25%;
+        }
+        
+        .col-days {
+            width: 25%;
+        }
+        
+        /* Header description style */
+        .header-desc {
+            font-size: 0.85rem;
+            font-weight: normal;
+            display: block;
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+        
+        /* Export success message */
+        .export-success {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #2ecc71;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .export-success i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-calculator"></i> Stay Duration Calculator</h1>
+            <p class="subtitle">Calculate stay duration between entry and exit dates with Excel export</p>
+        </header>
+        
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> Instructions</h3>
+            <ul>
+                <li><strong>Method 1 (Include both days)</strong>: Entry date - Exit date + 1 day</li>
+                <li><strong>Method 2 (Exclude departure day)</strong>: Entry date - Exit date</li>
+                <li>Click date boxes to select exit and entry dates</li>
+                <li>Click "Calculate Stay Duration" to show results</li>
+                <li>Click "Export to Excel" to save results as Excel file</li>
+                <li>Bottom shows total stay duration for both methods</li>
+                <li>Blank rows are automatically ignored</li>
+                <li>Click "Reset All Dates" to clear all content</li>
+            </ul>
+        </div>
+        
+        <div class="calculator-card">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-date"><i class="fas fa-plane-departure"></i> Exit Date</th>
+                            <th class="col-date"><i class="fas fa-plane-arrival"></i> Entry Date</th>
+                            <th class="col-days"><i class="far fa-calendar-alt"></i> Stay Days<span class="header-desc">(Include both days)</span></th>
+                            <th class="col-days"><i class="far fa-calendar-alt"></i> Stay Days<span class="header-desc">(Exclude departure day)</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="dateRows">
+                        <!-- 10 rows of date inputs will be generated here -->
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="2"><i class="fas fa-chart-bar"></i> Total Stay Days</td>
+                            <td class="total-value" id="totalDays1">0</td>
+                            <td class="total-value" id="totalDays2">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            
+            <div class="controls">
+                <div class="buttons-container">
+                    <div class="main-buttons">
+                        <button class="calculate-btn" id="calculateBtn">
+                            <i class="fas fa-calculator"></i> Calculate Stay Duration
+                        </button>
+                        <button class="reset-btn" id="resetBtn">
+                            <i class="fas fa-redo"></i> Reset All Dates
+                        </button>
+                    </div>
+                    <button class="export-btn" id="exportBtn">
+                        <i class="fas fa-file-excel"></i> Export to Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2023 Stay Duration Calculator | Two calculation methods with Excel export support</p>
+        </div>
+        
+        <!-- Export success message -->
+        <div class="export-success" id="exportSuccess">
+            <i class="fas fa-check-circle"></i> Excel file exported successfully!
+        </div>
+    </div>
+
+    <script>
+        // Ensure initialization after page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateRows = document.getElementById('dateRows');
+            
+            // Create 10 rows of input fields
+            for (let i = 1; i <= 10; i++) {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>
+                        <div class="date-input-wrapper">
+                            <input type="date" class="date-input" id="departure${i}" data-row="${i}">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="date-input-wrapper">
+                            <input type="date" class="date-input" id="arrival${i}" data-row="${i}">
+                        </div>
+                    </td>
+                    <td class="days-cell">
+                        <div class="days-result days-with-both" id="daysWithBoth${i}">-</div>
+                    </td>
+                    <td class="days-cell-small">
+                        <div class="days-result days-without-departure" id="daysWithoutDeparture${i}">-</div>
+                    </td>
+                `;
+                dateRows.appendChild(row);
+            }
+            
+            // Add event listeners for calculation button
+            document.getElementById('calculateBtn').addEventListener('click', calculateDays);
+            
+            // Add event listeners for reset button
+            document.getElementById('resetBtn').addEventListener('click', resetAllDates);
+            
+            // Add event listeners for export button
+            document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+            
+            // Set test data
+            setTestData();
+            
+            // Add touch feedback optimization
+            addTouchFeedback();
+            
+            // Calculate automatically on page load
+            calculateDays();
+        });
+        
+        // Calculate days function
+        function calculateDays() {
+            let totalDaysWithBoth = 0;
+            let totalDaysWithoutDeparture = 0;
+            
+            // Iterate through each row
+            for (let i = 1; i <= 10; i++) {
+                const departureInput = document.getElementById(`departure${i}`);
+                const arrivalInput = document.getElementById(`arrival${i}`);
+                const daysWithBothCell = document.getElementById(`daysWithBoth${i}`);
+                const daysWithoutDepartureCell = document.getElementById(`daysWithoutDeparture${i}`);
+                
+                const departureDate = departureInput.value;
+                const arrivalDate = arrivalInput.value;
+                
+                // If both dates have values, calculate days
+                if (departureDate && arrivalDate) {
+                    const depDate = new Date(departureDate);
+                    const arrDate = new Date(arrivalDate);
+                    
+                    // Calculate time difference (milliseconds)
+                    const timeDiff = arrDate.getTime() - depDate.getTime();
+                    
+                    // Method 1: Include both entry and exit days (date difference + 1)
+                    const daysWithBoth = Math.floor(timeDiff / (1000 * 3600 * 24)) + 1;
+                    
+                    // Method 2: Exclude departure day (pure date difference)
+                    const daysWithoutDeparture = Math.floor(timeDiff / (1000 * 3600 * 24));
+                    
+                    // Display days
+                    daysWithBothCell.textContent = daysWithBoth;
+                    daysWithoutDepartureCell.textContent = daysWithoutDeparture;
+                    
+                    // Add to total days
+                    totalDaysWithBoth += daysWithBoth;
+                    totalDaysWithoutDeparture += daysWithoutDeparture;
+                } else {
+                    // If dates are incomplete, clear display
+                    daysWithBothCell.textContent = '-';
+                    daysWithoutDepartureCell.textContent = '-';
+                }
+            }
+            
+            // Update total days
+            document.getElementById('totalDays1').textContent = totalDaysWithBoth;
+            document.getElementById('totalDays2').textContent = totalDaysWithoutDeparture;
+        }
+        
+        // Reset all dates
+        function resetAllDates() {
+            // Iterate through each row, clear input fields and day displays
+            for (let i = 1; i <= 10; i++) {
+                document.getElementById(`departure${i}`).value = '';
+                document.getElementById(`arrival${i}`).value = '';
+                
+                const daysWithBothCell = document.getElementById(`daysWithBoth${i}`);
+                const daysWithoutDepartureCell = document.getElementById(`daysWithoutDeparture${i}`);
+                
+                daysWithBothCell.textContent = '-';
+                daysWithoutDepartureCell.textContent = '-';
+            }
+            
+            // Reset total days
+            document.getElementById('totalDays1').textContent = '0';
+            document.getElementById('totalDays2').textContent = '0';
+        }
+        
+        // Set test data
+        function setTestData() {
+            // Your provided 8 rows of test data
+            const testData = [
+                {departure: '2023-10-21', arrival: '2024-03-16'},
+                {departure: '2024-03-28', arrival: '2024-04-09'},
+                {departure: '2024-07-23', arrival: '2024-08-20'},
+                {departure: '2024-12-29', arrival: '2025-02-24'},
+                {departure: '2024-03-02', arrival: '2024-03-17'},
+                {departure: '2025-06-28', arrival: '2025-08-27'},
+                {departure: '2025-09-23', arrival: '2025-10-04'},
+                {departure: '2025-12-25', arrival: '2026-03-06'}
+            ];
+            
+            // Fill test data into first 8 rows
+            for (let i = 0; i < testData.length; i++) {
+                document.getElementById(`departure${i+1}`).value = testData[i].departure;
+                document.getElementById(`arrival${i+1}`).value = testData[i].arrival;
+            }
+        }
+        
+        // Export to Excel function
+        function exportToExcel() {
+            // Check if there is any data
+            let hasData = false;
+            for (let i = 1; i <= 10; i++) {
+                if (document.getElementById(`departure${i}`).value && 
+                    document.getElementById(`arrival${i}`).value) {
+                    hasData = true;
+                    break;
+                }
+            }
+            
+            if (!hasData) {
+                alert('Please enter date data first!');
+                return;
+            }
+            
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Create worksheet data
+            const data = [];
+            
+            // Add headers
+            data.push([
+                'No.',
+                'Exit Date', 
+                'Entry Date', 
+                'Stay Days (Include both)', 
+                'Stay Days (Exclude departure)'
+            ]);
+            
+            // Add data rows
+            for (let i = 1; i <= 10; i++) {
+                const departure = document.getElementById(`departure${i}`).value;
+                const arrival = document.getElementById(`arrival${i}`).value;
+                const daysWithBoth = document.getElementById(`daysWithBoth${i}`).textContent;
+                const daysWithoutDeparture = document.getElementById(`daysWithoutDeparture${i}`).textContent;
+                
+                // Only export rows with data
+                if (departure && arrival) {
+                    data.push([
+                        i,
+                        departure,
+                        arrival,
+                        daysWithBoth === '-' ? '' : parseInt(daysWithBoth),
+                        daysWithoutDeparture === '-' ? '' : parseInt(daysWithoutDeparture)
+                    ]);
+                }
+            }
+            
+            // Add empty row
+            data.push([]);
+            
+            // Add total row
+            data.push([
+                'Total',
+                '',
+                '',
+                document.getElementById('totalDays1').textContent === '0' ? '' : parseInt(document.getElementById('totalDays1').textContent),
+                document.getElementById('totalDays2').textContent === '0' ? '' : parseInt(document.getElementById('totalDays2').textContent)
+            ]);
+            
+            // Add instructions rows
+            data.push([]);
+            data.push(['Instructions:']);
+            data.push(['1. Stay Days (Include both): Entry Date - Exit Date + 1 day']);
+            data.push(['2. Stay Days (Exclude departure): Entry Date - Exit Date']);
+            data.push(['3. Blank rows indicate no input data or calculation result is "-"']);
+            data.push(['4. Export Time: ' + new Date().toLocaleString('en-US')]);
+            
+            // Create worksheet
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            
+            // Set column widths
+            const wscols = [
+                {wch: 8},   // No. column
+                {wch: 12},  // Exit Date
+                {wch: 12},  // Entry Date
+                {wch: 22},  // Stay Days (Include both)
+                {wch: 22}   // Stay Days (Exclude departure)
+            ];
+            ws['!cols'] = wscols;
+            
+            // Set header row style
+            const headerRange = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
+                const cellAddress = XLSX.utils.encode_cell({r: 0, c: C});
+                if (!ws[cellAddress]) continue;
+                ws[cellAddress].s = {
+                    font: {bold: true, color: {rgb: "FFFFFF"}},
+                    fill: {fgColor: {rgb: "3498DB"}},
+                    alignment: {horizontal: "center", vertical: "center"}
+                };
+            }
+            
+            // Set total row style
+            const totalRow = data.length - 6; // Total row position
+            for (let C = 0; C <= 4; ++C) {
+                const cellAddress = XLSX.utils.encode_cell({r: totalRow, c: C});
+                if (!ws[cellAddress]) continue;
+                ws[cellAddress].s = {
+                    font: {bold: true, color: {rgb: "000000"}},
+                    fill: {fgColor: {rgb: "F1C40F"}},
+                    alignment: {horizontal: "center", vertical: "center"}
+                };
+            }
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Stay Duration Results");
+            
+            // Generate filename (include current date)
+            const fileName = `Stay_Duration_Calculation_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
+            
+            // Export Excel file
+            XLSX.writeFile(wb, fileName);
+            
+            // Show export success message
+            showExportSuccess();
+        }
+        
+        // Show export success message
+        function showExportSuccess() {
+            const successMsg = document.getElementById('exportSuccess');
+            successMsg.style.display = 'flex';
+            
+            setTimeout(() => {
+                successMsg.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    successMsg.style.display = 'none';
+                    successMsg.style.animation = '';
+                }, 300);
+            }, 3000);
+        }
+        
+        // Add touch feedback optimization
+        function addTouchFeedback() {
+            const buttons = document.querySelectorAll('.calculate-btn, .reset-btn, .export-btn');
+            const dateInputs = document.querySelectorAll('.date-input');
+            
+            // Button touch feedback
+            buttons.forEach(button => {
+                button.addEventListener('touchstart', function() {
+                    this.style.transform = 'translateY(1px)';
+                    this.style.opacity = '0.9';
+                });
+                
+                button.addEventListener('touchend', function() {
+                    this.style.transform = '';
+                    this.style.opacity = '';
+                });
+            });
+            
+            // Date input touch optimization
+            dateInputs.forEach(input => {
+                input.addEventListener('touchstart', function() {
+                    setTimeout(() => {
+                        this.focus();
+                    }, 100);
+                });
+                
+                // Prevent double-tap zoom
+                let lastTouchEnd = 0;
+                input.addEventListener('touchend', function(event) {
+                    const now = (new Date()).getTime();
+                    if (now - lastTouchEnd <= 300) {
+                        event.preventDefault();
+                    }
+                    lastTouchEnd = now;
+                });
+            });
+        }
+        
+        // Handle screen orientation change
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                calculateDays();
+            }, 300);
+        });
+    </script>
+</body>
+</html>
